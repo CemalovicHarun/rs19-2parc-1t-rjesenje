@@ -1,4 +1,5 @@
-/*package ba.unsa.etf.rpr;
+package ba.unsa.etf.rs;
+
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,18 +22,15 @@ import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(ApplicationExtension.class)
-public class IspitDrzavaControllerSet {
+public class IspitDrzavaControllerTest {
     Stage theStage;
     DrzavaController ctrl;
 
     @Start
     public void start(Stage stage) throws Exception {
         GeografijaDAO dao = GeografijaDAO.getInstance();
-        Grad bech = dao.nadjiGrad("Beč");
-        Grad graz = dao.nadjiGrad("Graz");
-
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/drzava.fxml"));
-        ctrl = new DrzavaController(new Drzava(12345, "Fejk Austrija", bech, graz), dao.gradovi());
+        ctrl = new DrzavaController(null, dao.gradovi());
         loader.setController(ctrl);
         Parent root = loader.load();
         stage.setTitle("Država");
@@ -43,34 +41,44 @@ public class IspitDrzavaControllerSet {
         theStage = stage;
     }
 
+
     @Test
-    public void testIspravneVrijednosti(FxRobot robot) {
-        ChoiceBox<Grad> cb = robot.lookup("#choiceGrad").queryAs(ChoiceBox.class);
-        assertEquals("Beč", cb.getSelectionModel().getSelectedItem().getNaziv());
-        ChoiceBox<Grad> cb2 = robot.lookup("#choiceGradNajveci").queryAs(ChoiceBox.class);
-        assertEquals("Graz", cb2.getSelectionModel().getSelectedItem().getNaziv());
-        RadioButton rb1 = robot.lookup("#radioIsti").queryAs(RadioButton.class);
-        assertFalse(rb1.isSelected());
-        RadioButton rb2 = robot.lookup("#radioDrugi").queryAs(RadioButton.class);
-        assertTrue(rb2.isSelected());
+    public void testPoljaPostoje(FxRobot robot) {
+        CheckBox cb = robot.lookup("#cbViza").queryAs(CheckBox.class);
+        assertNotNull(cb);
+        assertEquals("Potrebna viza", cb.getText());
+        // Po defaultu nije aktivan
+        assertFalse(cb.isSelected());
     }
 
-
     @Test
-    public void testPromjenaTipa(FxRobot robot) {
+    public void testDefault(FxRobot robot) {
+        // Kreiramo državu bez klikanja na checkbox
+        robot.clickOn("#fieldNaziv");
+        robot.write("Mađarska");
         robot.clickOn("#choiceGrad");
         robot.clickOn("Pariz");
-        robot.clickOn("#radioIsti");
-
-        // Klik na dugme ok
         robot.clickOn("#btnOk");
 
-        Drzava austrija = ctrl.getDrzava();
-        assertEquals(12345, austrija.getId());
-        assertEquals("Fejk Austrija", austrija.getNaziv());
-        assertEquals("Pariz", austrija.getGlavniGrad().getNaziv());
-        assertEquals("Pariz", austrija.getNajveciGrad().getNaziv());
+        Drzava madjarska = ctrl.getDrzava();
+        assertEquals("Mađarska", madjarska.getNaziv());
+        assertEquals("Pariz", madjarska.getGlavniGrad().getNaziv());
+        assertFalse(madjarska.isViza());
     }
 
+    @Test
+    public void testPromjena(FxRobot robot) {
+        // Kreiramo državu za koju treba viza
+        robot.clickOn("#fieldNaziv");
+        robot.write("Argentina");
+        robot.clickOn("#choiceGrad");
+        robot.clickOn("Pariz");
+        robot.clickOn("#cbViza");
+        robot.clickOn("#btnOk");
+
+        Drzava argentina = ctrl.getDrzava();
+        assertEquals("Argentina", argentina.getNaziv());
+        assertEquals("Pariz", argentina.getGlavniGrad().getNaziv());
+        assertTrue(argentina.isViza());
+    }
 }
-*/

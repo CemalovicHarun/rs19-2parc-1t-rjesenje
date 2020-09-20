@@ -1,4 +1,4 @@
-package ba.unsa.etf.rpr;
+package ba.unsa.etf.rs;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -13,10 +13,12 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
@@ -124,6 +126,34 @@ public class GlavnaController {
         }
     }
 
+    public void actionIzmijeniDrzavu(ActionEvent actionEvent) {
+        Grad grad = tableViewGradovi.getSelectionModel().getSelectedItem();
+        if (grad == null) return;
+
+        Stage stage = new Stage();
+        Parent root = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/drzava.fxml"));
+            DrzavaController drzavaController = new DrzavaController(grad.getDrzava(), dao.gradovi());
+            loader.setController(drzavaController);
+            root = loader.load();
+            stage.setTitle("Država");
+            stage.setScene(new Scene(root, USE_COMPUTED_SIZE, USE_COMPUTED_SIZE));
+            stage.setResizable(true);
+            stage.show();
+
+            stage.setOnHiding( event -> {
+                Drzava drzava = drzavaController.getDrzava();
+                if (drzava != null) {
+                    dao.izmijeniDrzavu(drzava);
+                    listGradovi.setAll(dao.gradovi());
+                }
+            } );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void actionObrisiGrad(ActionEvent actionEvent) {
         Grad grad = tableViewGradovi.getSelectionModel().getSelectedItem();
         if (grad == null) return;
@@ -138,6 +168,66 @@ public class GlavnaController {
         if (result.get() == ButtonType.OK){
             dao.obrisiGrad(grad);
             listGradovi.setAll(dao.gradovi());
+        }
+    }
+
+    public void actionZapisiXML(ActionEvent actionEvent) {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Zapiši XML datoteku");
+            Stage stage = (Stage)tableViewGradovi.getScene().getWindow();
+            File file = fileChooser.showSaveDialog(stage);
+            if (file == null) // Kliknuto na cancel
+                return;
+
+            XMLFormat xml = new XMLFormat();
+            xml.setDrzave(dao.drzave());
+            xml.setGradovi(dao.gradovi());
+            xml.zapisi(file);
+        } catch(Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Wrong file format");
+            alert.setContentText("An error occured during file save.");
+            alert.showAndWait();
+        }
+    }
+
+    public void actionUcitajXML(ActionEvent actionEvent) {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Učitaj XML datoteku");
+            Stage stage = (Stage)tableViewGradovi.getScene().getWindow();
+            File file = fileChooser.showOpenDialog(stage);
+            if (file == null) // Kliknuto na cancel
+                return;
+
+            XMLFormat xml = new XMLFormat();
+            xml.ucitaj(file);
+
+            dao.obrisiSve();
+            for(Drzava drzava : xml.getDrzave()) {
+                dao.dodajDrzavu(drzava);
+                Drzava drzava1 = dao.nadjiDrzavu(drzava.getNaziv()); // Da pokupimo ID države
+                for (Grad grad : xml.getGradovi()) {
+                    if (grad.getDrzava().getNaziv().equals(drzava.getNaziv())) {
+                        grad.setDrzava(drzava1);
+                        dao.dodajGrad(grad);
+                        if (drzava.getGlavniGrad().getNaziv().equals(grad.getNaziv())) {
+                            Grad grad1 = dao.nadjiGrad(grad.getNaziv()); // Da pokupimo ID grada
+                            drzava1.setGlavniGrad(grad1);
+                            dao.izmijeniDrzavu(drzava1);
+                        }
+                    }
+                }
+            }
+
+            // Refreshujemo prikaz
+            listGradovi.setAll(dao.gradovi());
+        } catch(Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Wrong file format");
+            alert.setContentText("An error occured during file load:\n" + e.getMessage());
+            alert.showAndWait();
         }
     }
 

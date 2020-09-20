@@ -1,9 +1,10 @@
-package ba.unsa.etf.rpr;
+package ba.unsa.etf.rs;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -15,6 +16,7 @@ public class DrzavaController {
     public ChoiceBox<Grad> choiceGrad;
     private Drzava drzava;
     private ObservableList<Grad> listGradovi;
+    public CheckBox cbViza;
 
     public DrzavaController(Drzava drzava, ArrayList<Grad> gradovi) {
         this.drzava = drzava;
@@ -26,7 +28,11 @@ public class DrzavaController {
         choiceGrad.setItems(listGradovi);
         if (drzava != null) {
             fieldNaziv.setText(drzava.getNaziv());
-            choiceGrad.getSelectionModel().select(drzava.getGlavniGrad());
+            //choiceGrad.getSelectionModel().select(drzava.getGlavniGrad());
+            for (Grad grad : listGradovi)
+                if (grad.getId() == drzava.getGlavniGrad().getId())
+                    choiceGrad.getSelectionModel().select(grad);
+            cbViza.setSelected(drzava.isViza());
         } else {
             choiceGrad.getSelectionModel().selectFirst();
         }
@@ -53,6 +59,7 @@ public class DrzavaController {
         if (drzava == null) drzava = new Drzava();
         drzava.setNaziv(fieldNaziv.getText());
         drzava.setGlavniGrad(choiceGrad.getSelectionModel().getSelectedItem());
+        drzava.setViza(cbViza.isSelected());
         closeWindow();
     }
 
